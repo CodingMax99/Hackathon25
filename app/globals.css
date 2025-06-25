@@ -12,6 +12,11 @@
   animation: fade-in 0.3s ease-out;
 }
 
+/* Custom hover color for dark mode */
+.hover\:bg-gray-750:hover {
+  background-color: #374151;
+}
+
 html {
   font-family: 'Segoe UI Semibold', 'Segoe UI', system-ui, sans-serif;
   font-weight: 600;

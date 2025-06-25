@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import jsPDF from 'jspdf'
 
 interface BriefData {
   accountName: string
@@ -18,6 +19,10 @@ export default function HomePage() {
   const [accountNames, setAccountNames] = useState<string[]>([])
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(true)
   const [darkMode, setDarkMode] = useState(false)
+  
+  // CRM Modal states
+  const [showCrmModal, setShowCrmModal] = useState(false)
+  const [crmData, setCrmData] = useState<any>(null)
   
   // Agent execution tracking
   const [currentAgentIndex, setCurrentAgentIndex] = useState<number>(-1)
@@ -334,15 +339,142 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
   const handleDownload = () => {
     if (!briefData) return
 
-    const blob = new Blob([briefData.markdownReport], { type: "text/markdown" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `AccountBrief-${briefData.accountName.replace(/[^a-zA-Z0-9]/g, "-")}.md`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    const pdf = new jsPDF()
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    const margin = 20
+    let currentY = margin
+
+    // Helper function to add text with word wrapping
+    const addText = (text: string, fontSize: number, isBold: boolean = false, color: string = '#000000') => {
+      pdf.setFontSize(fontSize)
+      pdf.setFont("helvetica", isBold ? "bold" : "normal")
+      
+      // Convert hex color to RGB
+      if (color === '#0078D4') {
+        pdf.setTextColor(0, 120, 212)
+      } else {
+        pdf.setTextColor(0, 0, 0)
+      }
+      
+      const lines = pdf.splitTextToSize(text, pageWidth - 2 * margin)
+      
+      // Check if we need a new page
+      if (currentY + (lines.length * fontSize * 0.4) > pageHeight - margin) {
+        pdf.addPage()
+        currentY = margin
+      }
+      
+      pdf.text(lines, margin, currentY)
+      currentY += lines.length * fontSize * 0.4 + 5
+    }
+
+    // Helper function to add a line break
+    const addLineBreak = (space: number = 10) => {
+      currentY += space
+    }
+
+    // Header with logo area
+    pdf.setFillColor(240, 240, 240)
+    pdf.rect(0, 0, pageWidth, 40, 'F')
+    
+    pdf.setFontSize(24)
+    pdf.setFont("helvetica", "bold")
+    pdf.setTextColor(0, 120, 212)
+    pdf.text("SELLY", margin, 25)
+    
+    pdf.setFontSize(12)
+    pdf.setFont("helvetica", "normal")
+    pdf.setTextColor(100, 100, 100)
+    pdf.text("More insights. More sales.", margin + 50, 25)
+    
+    currentY = 50
+
+    // Parse and format the markdown content
+    const content = briefData.markdownReport
+    const lines = content.split('\n')
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+      
+      if (!line) {
+        addLineBreak(5)
+        continue
+      }
+      
+      // Handle headers
+      if (line.startsWith('# ')) {
+        addLineBreak(10)
+        addText(line.substring(2), 20, true, '#0078D4')
+        addLineBreak(5)
+      } else if (line.startsWith('## ')) {
+        addLineBreak(8)
+        addText(line.substring(3), 16, true, '#0078D4')
+        addLineBreak(5)
+      } else if (line.startsWith('### ')) {
+        addLineBreak(6)
+        addText(line.substring(4), 14, true)
+        addLineBreak(3)
+      } else if (line.startsWith('---')) {
+        // Horizontal rule
+        addLineBreak(5)
+        pdf.setDrawColor(200, 200, 200)
+        pdf.line(margin, currentY, pageWidth - margin, currentY)
+        addLineBreak(5)
+      } else if (line.startsWith('> ')) {
+        // Blockquote
+        addLineBreak(3)
+        pdf.setFillColor(240, 248, 255)
+        const quoteText = line.substring(2)
+        const quoteLines = pdf.splitTextToSize(quoteText, pageWidth - 2 * margin - 20)
+        const quoteHeight = quoteLines.length * 12 * 0.4 + 10
+        
+        pdf.rect(margin, currentY - 5, pageWidth - 2 * margin, quoteHeight, 'F')
+        pdf.setDrawColor(0, 120, 212)
+        pdf.line(margin + 5, currentY - 5, margin + 5, currentY + quoteHeight - 5)
+        
+        pdf.setFontSize(12)
+        pdf.setFont("helvetica", "italic")
+        pdf.setTextColor(70, 70, 70)
+        pdf.text(quoteLines, margin + 15, currentY)
+        currentY += quoteHeight
+      } else if (line.startsWith('- ')) {
+        // Bullet point
+        const bulletText = line.substring(2)
+        pdf.setFontSize(11)
+        pdf.setFont("helvetica", "normal")
+        pdf.setTextColor(0, 0, 0)
+        
+        // Add bullet
+        pdf.text('•', margin + 5, currentY)
+        
+        // Add text with proper indentation
+        const bulletLines = pdf.splitTextToSize(bulletText, pageWidth - 2 * margin - 15)
+        pdf.text(bulletLines, margin + 15, currentY)
+        currentY += bulletLines.length * 11 * 0.4 + 3
+      } else if (line.includes('**') && line.includes('**')) {
+        // Handle bold text in regular paragraphs
+        let processedLine = line
+        let fontSize = 11
+        
+        // Simple bold text processing (this is a basic implementation)
+        processedLine = processedLine.replace(/\*\*(.*?)\*\*/g, '$1')
+        addText(processedLine, fontSize, false)
+      } else if (line.trim().length > 0) {
+        // Regular paragraph
+        addText(line, 11, false)
+      }
+    }
+
+    // Footer
+    pdf.setFontSize(8)
+    pdf.setFont("helvetica", "normal")
+    pdf.setTextColor(150, 150, 150)
+    pdf.text("Generated by SELLY • More insights. More sales.", margin, pageHeight - 15)
+    pdf.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth - margin - 60, pageHeight - 15)
+
+    // Save the PDF
+    pdf.save(`AccountBrief-${briefData.accountName.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`)
   }
 
   const handleReset = () => {
@@ -353,6 +485,65 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
     setCurrentAgentIndex(-1)
     setAgentBoxes([])
     setAgentTaskIndex(0)
+  }
+
+  // Load CRM data from CSV for the selected account
+  const handleInspectCrm = async () => {
+    if (!accountName) return
+
+    try {
+      const response = await fetch('/data/mock_crm_hackathon.csv')
+      const csvText = await response.text()
+      
+      // Parse CSV manually (simple parsing for semicolon-separated values)
+      const lines = csvText.split('\n').filter(line => line.trim())
+      const headers = lines[0].split(';')
+      
+      // Filter opportunities for the selected account
+      const accountOpportunities = lines
+        .slice(1) // Skip header row
+        .map(line => {
+          const columns = line.split(';')
+          const opportunity: any = {}
+          headers.forEach((header, index) => {
+            opportunity[header.trim()] = columns[index]?.trim() || ''
+          })
+          return opportunity
+        })
+        .filter(opp => opp.Account_Name === accountName)
+
+      if (accountOpportunities.length > 0) {
+        // Extract account information from first opportunity (all should have same account data)
+        const firstOpp = accountOpportunities[0]
+        
+        // Separate active and closed opportunities
+        const activeOpportunities = accountOpportunities.filter(opp => opp.Is_Open === 'TRUE')
+        const closedOpportunities = accountOpportunities.filter(opp => opp.Is_Open === 'FALSE')
+        
+        const crmData = {
+          accountInfo: {
+            name: firstOpp.Account_Name,
+            industry: firstOpp.Industry,
+            revenue: `$${firstOpp.Annual_Revenue_MUSD}M USD`,
+            employees: firstOpp.Employees,
+            headquarters: firstOpp.Headquarters,
+            tier: firstOpp.Account_Tier,
+            accountManager: firstOpp.Account_Manager,
+            lastInteraction: firstOpp.Last_Interaction_Date,
+            installedBase: firstOpp.Installed_Base,
+            region: firstOpp.Region
+          },
+          contacts: firstOpp.Main_Contacts.split(';').map((contact: string) => contact.trim()),
+          activeOpportunities,
+          closedOpportunities
+        }
+        
+        setCrmData(crmData)
+        setShowCrmModal(true)
+      }
+    } catch (error) {
+      console.error('Error loading CRM data:', error)
+    }
   }
 
   // Simple markdown to HTML converter
@@ -451,7 +642,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-4">
-            <img 
+            <img    
               src="/img/logoimg.png" 
               alt="SELLY Logo" 
               className="w-12 h-12 mr-3"
@@ -470,7 +661,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
         }`} style={{ borderRadius: '8px' }}>
           <div className="mb-6">
             <h3 className={`text-2xl font-light mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Generate Account Brief</h3>
-            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Get snapshot, low-ACR pipeline, upsell synergies, and ready-to-send storyline</p>
+            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Get snapshot, low-ACR pipeline, upsell synergies, and ready-to-use storyline</p>
           </div>
 
           <div className="space-y-6">
@@ -480,7 +671,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                 darkMode ? 'text-gray-200' : 'text-gray-700'
               }`}>
                 Account Name *
-              </label>
+              </label>  
               {isLoadingAccounts ? (
                 <div className={`w-full px-4 py-3 border rounded flex items-center transition-colors duration-300 ${
                   darkMode 
@@ -558,19 +749,32 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                   {agentBoxes.map((agent, index) => (
                     <div 
                       key={index} 
-                      className={`border-2 rounded-lg p-6 transition-all duration-500 ${
+                      className={`border-2 rounded-lg p-6 transition-all duration-500 relative ${
                         darkMode ? 'bg-gray-800' : 'bg-white'
                       } ${
                         agent.status === 'loading' ? 'border-blue-500 shadow-lg' :
                         agent.status === 'completed' ? 'border-green-500 shadow-md' :
                         darkMode ? 'border-gray-600' : 'border-gray-200'
+                      } ${
+                        agent.name === "CRM Agent" && accountName 
+                          ? `cursor-pointer hover:shadow-lg ${darkMode ? 'hover:bg-gray-750' : 'hover:bg-gray-50'} group` 
+                          : ''
                       }`}
+                      onClick={agent.name === "CRM Agent" && accountName ? handleInspectCrm : undefined}
+                      title={agent.name === "CRM Agent" && accountName ? "Click to inspect CRM data" : undefined}
                     >
+                      {/* Hover tooltip for CRM Agent */}
+                      {agent.name === "CRM Agent" && accountName && (
+                        <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                          Click to inspect CRM data
+                        </div>
+                      )}
+                      
                       {/* Agent Header */}
                       <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1">
                           <div className="text-2xl">{agent.icon}</div>
-                          <div>
+                          <div className="flex-1">
                             <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{agent.name}</h4>
                             <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{agent.description}</p>
                           </div>
@@ -651,14 +855,26 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                   {agentBoxes.map((agent, index) => (
                     <div 
                       key={index} 
-                      className={`border-2 border-green-500 rounded-lg p-6 shadow-md opacity-90 transition-colors duration-300 ${
+                      className={`border-2 border-green-500 rounded-lg p-6 shadow-md opacity-90 transition-colors duration-300 relative ${
                         darkMode ? 'bg-gray-800' : 'bg-white'
+                      } ${
+                        agent.name === "CRM Agent" && accountName 
+                          ? `cursor-pointer hover:shadow-xl ${darkMode ? 'hover:bg-gray-750' : 'hover:bg-gray-50'} group` 
+                          : ''
                       }`}
+                      onClick={agent.name === "CRM Agent" && accountName ? handleInspectCrm : undefined}
+                      title={agent.name === "CRM Agent" && accountName ? "Click to inspect CRM data" : undefined}
                     >
+                      {/* Hover tooltip for CRM Agent */}
+                      {agent.name === "CRM Agent" && accountName && (
+                        <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                          Click to inspect CRM data
+                        </div>
+                      )}
                       <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1">
                           <div className="text-2xl">{agent.icon}</div>
-                          <div>
+                          <div className="flex-1">
                             <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{agent.name}</h4>
                             <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{agent.description}</p>
                           </div>
@@ -796,7 +1012,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                       d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  Download Brief
+                  Download PDF
                 </button>
               </div>
             </div>
@@ -812,6 +1028,217 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                   className={`leading-relaxed ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}
                   dangerouslySetInnerHTML={{ __html: markdownToHtml(briefData.markdownReport) }}
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CRM Data Modal */}
+        {showCrmModal && crmData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className={`rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden ${
+              darkMode ? 'bg-gray-800' : 'bg-white'
+            }`}>
+              {/* Modal Header */}
+              <div className={`flex items-center justify-between p-6 border-b ${
+                darkMode ? 'border-gray-700' : 'border-gray-200'
+              }`}>
+                <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  CRM Data for {crmData.accountInfo.name}
+                </h3>
+                <button
+                  onClick={() => setShowCrmModal(false)}
+                  className={`p-2 rounded-md transition-colors ${
+                    darkMode 
+                      ? 'hover:bg-gray-700 text-gray-400' 
+                      : 'hover:bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  
+                  {/* Account Information */}
+                  <div className={`rounded-lg p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <h4 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Account Information</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Industry:</span>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                          {crmData.accountInfo.industry}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Revenue:</span>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                          {crmData.accountInfo.revenue}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Employees:</span>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                          {crmData.accountInfo.employees}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Headquarters:</span>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                          {crmData.accountInfo.headquarters}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tier:</span>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                          {crmData.accountInfo.tier}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Account Manager:</span>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                          {crmData.accountInfo.accountManager}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Last Interaction:</span>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                          {crmData.accountInfo.lastInteraction}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Key Contacts */}
+                  <div className={`rounded-lg p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <h4 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Key Contacts</h4>
+                    <div className="space-y-2">
+                      {crmData.contacts.map((contact: string, index: number) => (
+                        <div key={index} className={`p-2 rounded border ${
+                          darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white'
+                        }`}>
+                          <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {contact}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Installed Base */}
+                <div className={`rounded-lg p-4 mb-6 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <h4 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Installed Base</h4>
+                  <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {crmData.accountInfo.installedBase}
+                  </div>
+                </div>
+
+                {/* Active Opportunities */}
+                {crmData.activeOpportunities.length > 0 && (
+                  <div className={`rounded-lg p-4 mb-6 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <h4 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Active Pipeline ({crmData.activeOpportunities.length} opportunities)
+                    </h4>
+                    <div className="space-y-3">
+                      {crmData.activeOpportunities.map((opp: any, index: number) => (
+                        <div key={index} className={`p-3 rounded border ${
+                          darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white'
+                        }`}>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                              <div className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {opp.Product}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {opp.Opportunity_ID} | {opp.Product_Category}
+                              </div>
+                            </div>
+                            <div>
+                              <div className={`text-sm font-medium ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                ${parseInt(opp.ACV_USD).toLocaleString()}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                ACR: {opp.ACR}
+                              </div>
+                            </div>
+                            <div>
+                              <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {opp.Stage}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                Probability: {(parseFloat(opp.Probability) * 100).toFixed(0)}%
+                              </div>
+                            </div>
+                            <div>
+                              <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {opp.Owner}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                Synergy: {(parseFloat(opp.Synergy_Fit_Score) * 100).toFixed(0)}%
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Closed Won Opportunities */}
+                {crmData.closedOpportunities.length > 0 && (
+                  <div className={`rounded-lg p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <h4 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Previous Wins ({crmData.closedOpportunities.length} opportunities)
+                    </h4>
+                    <div className="space-y-3">
+                      {crmData.closedOpportunities.map((opp: any, index: number) => (
+                        <div key={index} className={`p-3 rounded border ${
+                          darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white'
+                        }`}>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                              <div className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {opp.Product}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {opp.Opportunity_ID} | {opp.Product_Category}
+                              </div>
+                            </div>
+                            <div>
+                              <div className={`text-sm font-medium ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                ${parseInt(opp.ACV_USD).toLocaleString()}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                ACR: {opp.ACR}
+                              </div>
+                            </div>
+                            <div>
+                              <div className={`text-sm text-green-600`}>
+                                {opp.Stage}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                Closed: {opp.Close_Date}
+                              </div>
+                            </div>
+                            <div>
+                              <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {opp.Owner}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                Synergy: {(parseFloat(opp.Synergy_Fit_Score) * 100).toFixed(0)}%
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
