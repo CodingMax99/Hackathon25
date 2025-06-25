@@ -17,6 +17,19 @@ export default function HomePage() {
   const [copied, setCopied] = useState(false)
   const [accountNames, setAccountNames] = useState<string[]>([])
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(true)
+  const [darkMode, setDarkMode] = useState(false)
+  
+  // Agent execution tracking
+  const [currentAgentIndex, setCurrentAgentIndex] = useState<number>(-1)
+  const [agentBoxes, setAgentBoxes] = useState<Array<{
+    name: string
+    description: string
+    status: 'pending' | 'loading' | 'completed'
+    currentTask: string
+    icon: string
+    tasks: string[]
+  }>>([])
+  const [agentTaskIndex, setAgentTaskIndex] = useState<number>(0)
 
   // Load account names from CSV file
   useEffect(() => {
@@ -204,22 +217,96 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
     setIsGenerating(true)
     setProgress(0)
     setBriefData(null)
+    setCurrentAgentIndex(-1)
+    setAgentTaskIndex(0)
 
-    // Simulate analysis workflow with progress updates
-    const steps = [
-      { name: "Data Collection", duration: 1200 }, // 35% 
-      { name: "Analysis", duration: 1200 }, // 70%
-      { name: "Report Generation", duration: 800 }, // 100%
+    // Define the 3 agent boxes
+    const agents = [
+      {
+        name: "CRM Agent",
+        description: "Analyzing CRM data and product portfolio",
+        status: 'pending' as const,
+        currentTask: "",
+        icon: "🔍",
+        tasks: [
+          "Connecting to CRM database...",
+          "Analyzing account history...",
+          "Extracting opportunity insights...",
+          "Mapping product portfolio...",
+          "Identifying cross-sell patterns...",
+          "CRM analysis complete"
+        ]
+      },
+      {
+        name: "Research Agent",
+        description: "Crawling web for market intelligence",
+        status: 'pending' as const,
+        currentTask: "",
+        icon: "🌐",
+        tasks: [
+          "Searching recent news articles...",
+          "Analyzing industry trends...",
+          "Monitoring competitor activities...",
+          "Gathering market insights...",
+          "Correlating external signals...",
+          "Research complete"
+        ]
+      },
+      {
+        name: "Briefing Agent",
+        description: "Generating strategic account brief",
+        status: 'pending' as const,
+        currentTask: "",
+        icon: "📋",
+        tasks: [
+          "Synthesizing CRM insights...",
+          "Integrating market intelligence...",
+          "Crafting strategic narrative...",
+          "Generating recommendations...",
+          "Finalizing account brief...",
+          "Brief generation complete"
+        ]
+      }
     ]
 
-    let currentProgress = 0
-    for (let i = 0; i < steps.length; i++) {
-      await new Promise((resolve) => setTimeout(resolve, steps[i].duration))
-      currentProgress = ((i + 1) / steps.length) * 100
-      setProgress(currentProgress)
+    // Initialize agent boxes
+    setAgentBoxes(agents)
+
+    // Process each agent sequentially
+    for (let i = 0; i < agents.length; i++) {
+      setCurrentAgentIndex(i)
+      
+      // Mark current agent as loading
+      setAgentBoxes(prev => prev.map((agent, index) => 
+        index === i ? { ...agent, status: 'loading' } : agent
+      ))
+
+      // Process each task for the current agent
+      for (let j = 0; j < agents[i].tasks.length; j++) {
+        setAgentTaskIndex(j)
+        
+        // Update current task
+        setAgentBoxes(prev => prev.map((agent, index) => 
+          index === i ? { ...agent, currentTask: agents[i].tasks[j] } : agent
+        ))
+
+        // Wait for task duration (varying times for realism)
+        const taskDuration = j === agents[i].tasks.length - 1 ? 800 : 600 + Math.random() * 400
+        await new Promise(resolve => setTimeout(resolve, taskDuration))
+        
+        // Update overall progress
+        const totalTasks = agents.reduce((sum, agent) => sum + agent.tasks.length, 0)
+        const completedTasks = i * agents[0].tasks.length + j + 1
+        setProgress((completedTasks / totalTasks) * 100)
+      }
+
+      // Mark agent as completed
+      setAgentBoxes(prev => prev.map((agent, index) => 
+        index === i ? { ...agent, status: 'completed', currentTask: agents[i].tasks[agents[i].tasks.length - 1] } : agent
+      ))
     }
 
-    // Generate dummy markdown report (later this will be replaced with LLM agent)
+    // Generate dummy markdown report
     const markdownReport = generateDummyMarkdownReport(accountName, includeClosedWon)
     setBriefData({
       accountName,
@@ -227,6 +314,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
       markdownReport,
     })
 
+    setCurrentAgentIndex(-1)
     setIsGenerating(false)
     setProgress(0)
   }
@@ -262,23 +350,26 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
     setIncludeClosedWon(true)
     setBriefData(null)
     setCopied(false)
+    setCurrentAgentIndex(-1)
+    setAgentBoxes([])
+    setAgentTaskIndex(0)
   }
 
   // Simple markdown to HTML converter
   const markdownToHtml = (markdown: string) => {
     let html = markdown
       // Headers
-      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-300">$1</h1>')
+      .replace(/^# (.*$)/gim, `<h1 class="text-3xl font-bold mb-4 pb-2 border-b ${darkMode ? 'text-gray-100 border-gray-600' : 'text-gray-900 border-gray-300'}">$1</h1>`)
       .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-semibold mb-3 mt-6" style="color: #0078D4;">$1</h2>')
-      .replace(/^### (.*$)/gim, '<h3 class="text-xl font-medium text-gray-800 mb-2 mt-4">$1</h3>')
+      .replace(/^### (.*$)/gim, `<h3 class="text-xl font-medium mb-2 mt-4 ${darkMode ? 'text-gray-200' : 'text-gray-800'}">$1</h3>`)
       // Bold text
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold" style="color: #0078D4;">$1</strong>')
       // Italic text
-      .replace(/\*(.*?)\*/g, '<em class="italic text-gray-600">$1</em>')
+      .replace(/\*(.*?)\*/g, `<em class="italic ${darkMode ? 'text-gray-400' : 'text-gray-600'}">$1</em>`)
       // Horizontal rules
-      .replace(/^---$/gim, '<hr class="my-6 border-gray-300" />')
+      .replace(/^---$/gim, `<hr class="my-6 ${darkMode ? 'border-gray-600' : 'border-gray-300'}" />`)
       // Blockquotes
-      .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 pl-4 py-2 my-4 bg-blue-50 italic text-gray-700" style="border-left-color: #0078D4;">$1</blockquote>')
+      .replace(/^> (.*$)/gim, `<blockquote class="border-l-4 pl-4 py-2 my-4 italic ${darkMode ? 'bg-blue-900 text-gray-300' : 'bg-blue-50 text-gray-700'}" style="border-left-color: #0078D4;">$1</blockquote>`)
     
     // Handle lists
     const lines = html.split('\n')
@@ -290,13 +381,13 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
       
       if (line.match(/^- /)) {
         if (!inList) {
-          processedLines.push('<ul class="list-disc list-inside mb-3 text-gray-700">')
+          processedLines.push(`<ul class="list-disc list-inside mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}">`)
           inList = true
         }
         processedLines.push(`<li class="mb-1">${line.replace(/^- /, '')}</li>`)
       } else if (line.match(/^\d+\. /)) {
         if (!inList) {
-          processedLines.push('<ol class="list-decimal list-inside mb-3 text-gray-700">')
+          processedLines.push(`<ol class="list-decimal list-inside mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}">`)
           inList = true
         }
         processedLines.push(`<li class="mb-1">${line.replace(/^\d+\. /, '')}</li>`)
@@ -327,10 +418,36 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
-      style={{ fontFamily: "Segoe UI, system-ui, sans-serif" }}
+      className={`min-h-screen transition-colors duration-300 ${
+        darkMode 
+          ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
+          : 'bg-gradient-to-br from-gray-50 to-gray-100'
+      }`}
+      style={{ fontFamily: "'Segoe UI Semibold', 'Segoe UI', system-ui, sans-serif", fontWeight: 600 }}
     >
       <div className="max-w-6xl mx-auto px-6 py-20">
+        {/* Dark Mode Toggle */}
+        <div className="fixed top-6 right-6 z-50">
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`p-3 rounded-full transition-all duration-300 ${
+              darkMode 
+                ? 'bg-gray-700 hover:bg-gray-600 text-yellow-400' 
+                : 'bg-white hover:bg-gray-50 text-gray-600 shadow-lg'
+            }`}
+          >
+            {darkMode ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+              </svg>
+            )}
+          </button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-4">
@@ -339,30 +456,42 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
               alt="SELLY Logo" 
               className="w-12 h-12 mr-3"
             />
-            <h1 className="text-4xl font-light text-gray-800">SELLY</h1>
+            <h1 className={`text-4xl font-light ${darkMode ? 'text-white' : 'text-gray-800'}`}>SELLY</h1>
           </div>
-          <h2 className="text-xl text-gray-600 font-light mb-2">More insights. More sales.</h2>
-          <p className="text-gray-500">Give enterprise sellers every critical insight about a target account in under ten seconds</p>
+          <h2 className={`text-xl font-light mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>More insights. More sales.</h2>
+          <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Give enterprise sellers every critical insight about a target account in under ten seconds</p>
         </div>
 
         {/* Input Form */}
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-8 mb-8" style={{ borderRadius: '8px' }}>
+        <div className={`rounded-lg shadow-lg border p-8 mb-8 transition-colors duration-300 ${
+          darkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-gray-200'
+        }`} style={{ borderRadius: '8px' }}>
           <div className="mb-6">
-            <h3 className="text-2xl font-light text-gray-800 mb-2">Generate Account Brief</h3>
-            <p className="text-gray-600">Get snapshot, low-ACR pipeline, upsell synergies, and ready-to-send storyline</p>
+            <h3 className={`text-2xl font-light mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Generate Account Brief</h3>
+            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Get snapshot, low-ACR pipeline, upsell synergies, and ready-to-send storyline</p>
           </div>
 
           <div className="space-y-6">
             {/* Account Name Dropdown */}
             <div>
-              <label htmlFor="account-name" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="account-name" className={`block text-sm font-semibold mb-2 ${
+                darkMode ? 'text-gray-200' : 'text-gray-700'
+              }`}>
                 Account Name *
               </label>
               {isLoadingAccounts ? (
-                <div className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded flex items-center" 
+                <div className={`w-full px-4 py-3 border rounded flex items-center transition-colors duration-300 ${
+                  darkMode 
+                    ? 'border-gray-600 bg-gray-700 text-gray-300' 
+                    : 'border-gray-300 bg-gray-100 text-gray-500'
+                }`} 
                      style={{ borderRadius: '8px' }}>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mr-2"></div>
-                  <span className="text-gray-500">Loading accounts...</span>
+                  <div className={`animate-spin rounded-full h-4 w-4 border-b-2 mr-2 ${
+                    darkMode ? 'border-gray-400' : 'border-gray-400'
+                  }`}></div>
+                  <span>Loading accounts...</span>
                 </div>
               ) : (
                 <select
@@ -370,7 +499,11 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   disabled={isGenerating}
-                  className="w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed bg-white"
+                  className={`w-full px-4 py-3 border focus:ring-2 focus:border-blue-500 disabled:cursor-not-allowed transition-colors duration-300 ${
+                    darkMode 
+                      ? 'border-gray-600 bg-gray-700 text-white disabled:bg-gray-600' 
+                      : 'border-gray-300 bg-white text-gray-900 disabled:bg-gray-100'
+                  }`}
                   style={{ borderRadius: '8px' }}
                 >
                   <option value="">Select an account...</option>
@@ -394,23 +527,163 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                 className="h-4 w-4 focus:ring-2 border-gray-300 rounded disabled:cursor-not-allowed"
                 style={{ accentColor: '#0078D4' }}
               />
-              <label htmlFor="include-closed-won" className="ml-3 text-sm text-gray-700">
+              <label htmlFor="include-closed-won" className={`ml-3 text-sm ${
+                darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>
                 Include closed/won analysis
               </label>
             </div>
 
-            {/* Progress Bar */}
+            {/* Agent Execution Display */}
             {isGenerating && (
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Generating brief...</span>
-                  <span className="text-sm text-gray-600">{Math.round(progress)}%</span>
+              <div className="space-y-6">
+                {/* Overall Progress */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Generating account brief...
+                    </span>
+                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{Math.round(progress)}%</span>
+                  </div>
+                  <div className={`w-full rounded-full h-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
+
+                {/* Three Agent Boxes */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {agentBoxes.map((agent, index) => (
+                    <div 
+                      key={index} 
+                      className={`border-2 rounded-lg p-6 transition-all duration-500 ${
+                        darkMode ? 'bg-gray-800' : 'bg-white'
+                      } ${
+                        agent.status === 'loading' ? 'border-blue-500 shadow-lg' :
+                        agent.status === 'completed' ? 'border-green-500 shadow-md' :
+                        darkMode ? 'border-gray-600' : 'border-gray-200'
+                      }`}
+                    >
+                      {/* Agent Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="text-2xl">{agent.icon}</div>
+                          <div>
+                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{agent.name}</h4>
+                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{agent.description}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Status Indicator */}
+                        <div className="flex-shrink-0">
+                          {agent.status === 'pending' && (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                            }`}>
+                              <div className={`w-3 h-3 rounded-full ${
+                                darkMode ? 'bg-gray-500' : 'bg-gray-400'
+                              }`}></div>
+                            </div>
+                          )}
+                          {agent.status === 'loading' && (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              darkMode ? 'bg-blue-900' : 'bg-blue-100'
+                            }`}>
+                              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          )}
+                          {agent.status === 'completed' && (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              darkMode ? 'bg-green-900' : 'bg-green-100'
+                            }`}>
+                              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Current Task */}
+                      <div className="min-h-[60px] flex items-center">
+                        {agent.currentTask && (
+                          <div className={`text-sm transition-all duration-300 ${
+                            agent.status === 'loading' ? 'text-blue-600 font-medium' :
+                            agent.status === 'completed' ? 'text-green-600 font-medium' :
+                            darkMode ? 'text-gray-500' : 'text-gray-400'
+                          }`}>
+                            {agent.currentTask}
+                          </div>
+                        )}
+                        {!agent.currentTask && agent.status === 'pending' && (
+                          <div className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Waiting to start...</div>
+                        )}
+                      </div>
+
+                      {/* Progress Dots for Current Agent */}
+                      {agent.status !== 'pending' && (
+                        <div className="flex gap-1 mt-4">
+                          {agent.tasks.map((_, taskIndex) => (
+                            <div
+                              key={taskIndex}
+                              className={`h-1 flex-1 rounded transition-all duration-300 ${
+                                agent.status === 'completed' ? 'bg-green-500' :
+                                (currentAgentIndex === index && taskIndex <= agentTaskIndex) ? 'bg-blue-500' :
+                                darkMode ? 'bg-gray-600' : 'bg-gray-200'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Show completed agent boxes even after generation */}
+            {!isGenerating && agentBoxes.length > 0 && (
+              <div className="space-y-4">
+                <div className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>✅ Agent Analysis Complete</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {agentBoxes.map((agent, index) => (
+                    <div 
+                      key={index} 
+                      className={`border-2 border-green-500 rounded-lg p-6 shadow-md opacity-90 transition-colors duration-300 ${
+                        darkMode ? 'bg-gray-800' : 'bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="text-2xl">{agent.icon}</div>
+                          <div>
+                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{agent.name}</h4>
+                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{agent.description}</p>
+                          </div>
+                        </div>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          darkMode ? 'bg-green-900' : 'bg-green-100'
+                        }`}>
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="text-sm text-green-600 font-medium">
+                        {agent.currentTask}
+                      </div>
+                      <div className="flex gap-1 mt-4">
+                        {agent.tasks.map((_, taskIndex) => (
+                          <div
+                            key={taskIndex}
+                            className="h-1 flex-1 rounded bg-green-500"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -441,7 +714,11 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
               {briefData && (
                 <button
                   onClick={handleReset}
-                  className="px-6 py-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-gray-700"
+                  className={`px-6 py-4 border rounded-md hover:opacity-90 transition-colors ${
+                    darkMode 
+                      ? 'border-gray-600 hover:bg-gray-700 text-gray-300' 
+                      : 'border-gray-300 hover:bg-gray-50 text-gray-700'
+                  }`}
                   style={{ borderRadius: '8px' }}
                 >
                   New Brief
@@ -453,7 +730,11 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
 
         {/* Brief Results */}
         {briefData && (
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-8" style={{ borderRadius: '8px' }}>
+          <div className={`rounded-lg shadow-lg border p-8 transition-colors duration-300 ${
+            darkMode 
+              ? 'bg-gray-800 border-gray-700' 
+              : 'bg-white border-gray-200'
+          }`} style={{ borderRadius: '8px' }}>
             {/* Brief Header with Actions */}
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center">
@@ -463,15 +744,19 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                   className="w-10 h-10 mr-4"
                 />
                 <div>
-                  <h2 className="text-3xl font-light text-gray-800">Account Brief Generated</h2>
-                  <p className="text-gray-600">Critical insights for your target account</p>
+                  <h2 className={`text-3xl font-light ${darkMode ? 'text-white' : 'text-gray-800'}`}>Account Brief Generated</h2>
+                  <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Critical insights for your target account</p>
                 </div>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={handleCopy}
-                  className="flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  className={`flex items-center px-4 py-2 border rounded-md hover:opacity-90 transition-colors ${
+                    darkMode 
+                      ? 'border-gray-600 hover:bg-gray-700 text-gray-300' 
+                      : 'border-gray-300 hover:bg-gray-50 text-gray-700'
+                  }`}
                 >
                   {copied ? (
                     <>
@@ -496,7 +781,11 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                 </button>
                 <button
                   onClick={handleDownload}
-                  className="flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  className={`flex items-center px-4 py-2 border rounded-md hover:opacity-90 transition-colors ${
+                    darkMode 
+                      ? 'border-gray-600 hover:bg-gray-700 text-gray-300' 
+                      : 'border-gray-300 hover:bg-gray-50 text-gray-700'
+                  }`}
                   style={{ borderRadius: '8px' }}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -513,10 +802,14 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
             </div>
 
             {/* Account Brief Display */}
-            <div className="border border-gray-200 rounded-lg p-6 bg-gray-50" style={{ borderRadius: '8px' }}>
+            <div className={`border rounded-lg p-6 transition-colors duration-300 ${
+              darkMode 
+                ? 'border-gray-600 bg-gray-700' 
+                : 'border-gray-200 bg-gray-50'
+            }`} style={{ borderRadius: '8px' }}>
               <div className="prose prose-gray max-w-none">
                 <div 
-                  className="text-gray-800 leading-relaxed"
+                  className={`leading-relaxed ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}
                   dangerouslySetInnerHTML={{ __html: markdownToHtml(briefData.markdownReport) }}
                 />
               </div>
@@ -525,9 +818,13 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
         )}
 
         {/* Footer */}
-        <div className="mt-8 text-center bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200 p-4" style={{ borderRadius: '8px' }}>
-          <p className="text-sm text-gray-500 mb-1">Powered by SELLY AI</p>
-          <p className="text-xs text-gray-400">More insights. More sales.</p>
+        <div className={`mt-8 text-center backdrop-blur-sm rounded-lg border p-4 transition-colors duration-300 ${
+          darkMode 
+            ? 'bg-gray-800/60 border-gray-700' 
+            : 'bg-white/60 border-gray-200'
+        }`} style={{ borderRadius: '8px' }}>
+          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Powered by SELLY AI</p>
+          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>More insights. More sales.</p>
         </div>
       </div>
     </div>
