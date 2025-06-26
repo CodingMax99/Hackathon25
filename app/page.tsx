@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import jsPDF from 'jspdf'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface BriefData {
   accountName: string
@@ -83,79 +85,68 @@ export default function HomePage() {
     const isContoso = accountName.toLowerCase().includes("contoso")
 
     if (isContoso) {
-      return `# Account Brief for ${accountName}
+      return `# Contoso – Account Report (June 2025)
 
-## Account Snapshot – Status Quo & Financials
+## 1. Management Summary
+Contoso is a leading German supplier to the automotive industry, generating an annual revenue of USD 4.6 billion and employing 7,500 people. The company is currently facing industry-wide layoffs, increasing production pressure, and intense competition from China.
 
-**Contoso Ltd.** is a global manufacturing leader specializing in IoT sensors with €2.8B revenue (2024). Recent expansion into AI R&D with new Munich hub signals strategic pivot toward intelligent manufacturing. Strong financial position with 15% YoY growth in industrial automation segment.
+## 2. Company Profile
+| Metric | Value |
+| --- | --- |
+| **Account Name** | Contoso |
+| **Short Description** | German supplier to the automotive industry |
+| **Annual Revenue (USD million)** | 4,600 |
+| **Employees** | 7,500 |
 
-### Key Financial Metrics
-- **Revenue:** €2.8B (2024)
-- **Growth Rate:** 15% YoY
-- **Focus Area:** Industrial automation and IoT
+## 3. CRM Insights – What the Numbers Mean
+Internal data positions Contoso as a **strategic account** yet reveals an imbalance in workload adoption: the company has already invested heavily in Azure-based IoT and analytics—closing more than €5 million in wins over the past 18 months—while **Azure AI workloads are still underperforming**. 
+Two AI-focused deals (Azure OpenAI and Microsoft Fabric) sit early in the pipeline with very low ACR and a combined value of roughly €2 million, signalling quick-win potential once an AI use-case narrative resonates with the client. 
+Given the robust Azure cloud and Power BI footprint, plus a recent interaction on 23 June 2025, Contoso is primed for an AI upsell that extends—not replaces—their existing stack.
 
----
+## 4. Current Challenges (Web-Agent News Summary)
 
-## Previous Deals & Installed Base
+1. **Industry-wide layoffs** – Cost pressures are forcing reductions in personnel while retaining productivity.
+2. **Rising supply chain challenges** – Supply shortages are leading to delays.
+3. **Competition from China** – Aggressive pricing and shorter development cycles are putting Contoso under pressure.
 
-${includeClosedWon 
-  ? `Previous Microsoft wins include **Azure IoT Suite** (€2.6M, Feb 2024) and **Power BI Premium** (€0.9M, Nov 2023). Installed base demonstrates commitment to Microsoft cloud ecosystem with focus on data analytics and IoT infrastructure.
+## 5. Growth and Synergy Potential
+| Challenge | Impact of AI Foundry (Agentic Systems) |
+| --- | --- | 
+| Workforce reduction | Agent-based automation of repetitive engineering & back-office processes | 
+| Production pressure | AI-supported simulation & optimization of manufacturing parameters in real time | 
+| Competitive pressure | Faster time to market through generative design agents |
+| Supply chain delays | Intelligent production planning based on an agentic system |
 
-### Recent Wins
-- **Azure IoT Suite**: €2.6M (February 2024)
-- **Power BI Premium**: €0.9M (November 2023)
+## 6. Recommended Solution Architecture
 
-### Technology Stack
-- Microsoft Azure Cloud Platform
-- Power BI Analytics
-- IoT Infrastructure`
-  : `No closed/won analysis included in this brief.`}
+Azure OpenAI Service provides scalable model capacities.
+- **AI Foundry** orchestrates specialized agents (quality, planning, design).
+- **Power BI & Fabric** visualize KPI progress for leadership.
 
----
+## 7. Storyline – How to Approach the Client
 
-## Low-ACR Pipeline Deals
+1. **C-Level Visioning Workshop (CW 28)**
+   Goal: Joint vision "Productivity 2030".
+2. **Value Discovery & Use Case Scoring (CW 29–30)**
+   Prioritize quick wins (e.g. quality agent, supply chain copilot).
+3. **Pilot "Smart Factory Agents" (Q3 / CY 2025)**
+   6-week PoC at Plant 3, KPI: OEE +5%.
+4. **Roll-out & Change Enablement (Q4 / CY 2025)**
+   Scale across all plants, define workforce up/reskilling paths.
+5. **Joint Success Plan (FY 2026)**
+   Continuous KPI monitoring and upsell roadmap (Data Fabric, Security).
 
-Two qualified deals with low ACR scores:
-
-### Current Deals
-- **Azure OpenAI** (DEAL-317, ACR: 0.12, Owner: Tobi)
-- **Microsoft Fabric** (DEAL-322, ACR: 0.18, Owner: Max)
-
-Both deals align with Contoso's AI transformation initiative announced in recent news.
-
----
-
-## Upsell Synergies with High Potential
-
-### Highest synergy potential:
-
-1. **Azure OpenAI + Azure IoT Suite** 
-   - **Fit Score:** 0.8
-   - **Use Case:** Enable predictive maintenance with AI-powered insights
-
-2. **Microsoft Fabric + Power BI Premium**
-   - **Fit Score:** 0.75  
-   - **Use Case:** Unified analytics platform for manufacturing data
-
-> **Combined upsell potential:** €4.2M based on similar manufacturing accounts.
-
----
-
-## 🎯 Ready-to-Send Storyline
-
-Position Contoso's AI R&D expansion as the perfect catalyst for **Azure OpenAI** integration with their existing **Azure IoT Suite**. 
-
-The Munich hub announcement proves executive commitment to AI transformation, making this the ideal time to propose **Microsoft Fabric** as the unified data foundation that extends their successful **Power BI Premium** deployment.
-
-### Key Talking Points
-- Leverage existing Azure investment
-- AI-driven manufacturing insights
-- Unified data platform strategy
-- Proven ROI from current Microsoft solutions
+## 8. Next Steps
+| Date | Activity | Responsible |
+| --- | --- | --- |
+| 03 July 2025 | Preparation Visioning Workshop | Account Team |
+| 10 July 2025 | Visioning Workshop in Stuttgart | Contoso CxO & Account Team |
+| 15 July 2025 | Sign-off Use Case Backlog & PoC Scope | Contoso COO |
+| 05 Aug 2025 | Kick-off Pilot "Smart Factory Agents" | Joint PMO |
 
 ---
 
-*Generated by SELLY • More insights. More sales.*`
+*Generated by Selly • More insights. More sales.*`
     } else {
       return `# Account Brief for ${accountName}
 
@@ -212,7 +203,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
 
 ---
 
-*Generated by SELLY • More insights. More sales.*`
+*Generated by Selly • More Insights. More Sales.*`
     }
   }
 
@@ -229,7 +220,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
     const agents = [
       {
         name: "CRM Agent",
-        description: "Analyzing CRM data and product portfolio",
+        description: "Analyzing CRM data and portfolio",
         status: 'pending' as const,
         currentTask: "",
         icon: "🔍",
@@ -243,7 +234,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
         ]
       },
       {
-        name: "Research Agent",
+        name: "Web Agent",
         description: "Crawling web for market intelligence",
         status: 'pending' as const,
         currentTask: "",
@@ -258,7 +249,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
         ]
       },
       {
-        name: "Briefing Agent",
+        name: "Analyst Agent",
         description: "Generating strategic account brief",
         status: 'pending' as const,
         currentTask: "",
@@ -381,12 +372,12 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
     pdf.setFontSize(24)
     pdf.setFont("helvetica", "bold")
     pdf.setTextColor(0, 120, 212)
-    pdf.text("SELLY", margin, 25)
+    pdf.text("Selly", margin, 25)
     
     pdf.setFontSize(12)
     pdf.setFont("helvetica", "normal")
     pdf.setTextColor(100, 100, 100)
-    pdf.text("More insights. More sales.", margin + 50, 25)
+    pdf.text("More Insights. More Sales.", margin + 50, 25)
     
     currentY = 50
 
@@ -470,7 +461,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
     pdf.setFontSize(8)
     pdf.setFont("helvetica", "normal")
     pdf.setTextColor(150, 150, 150)
-    pdf.text("Generated by SELLY • More insights. More sales.", margin, pageHeight - 15)
+    pdf.text("Generated by Selly • More Insights. More Sales.", margin, pageHeight - 15)
     pdf.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth - margin - 60, pageHeight - 15)
 
     // Save the PDF
@@ -526,11 +517,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
             industry: firstOpp.Industry,
             revenue: `$${firstOpp.Annual_Revenue_MUSD}M USD`,
             employees: firstOpp.Employees,
-            headquarters: firstOpp.Headquarters,
-            tier: firstOpp.Account_Tier,
             accountManager: firstOpp.Account_Manager,
-            lastInteraction: firstOpp.Last_Interaction_Date,
-            installedBase: firstOpp.Installed_Base,
             region: firstOpp.Region
           },
           contacts: firstOpp.Main_Contacts.split(';').map((contact: string) => contact.trim()),
@@ -544,67 +531,6 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
     } catch (error) {
       console.error('Error loading CRM data:', error)
     }
-  }
-
-  // Simple markdown to HTML converter
-  const markdownToHtml = (markdown: string) => {
-    let html = markdown
-      // Headers
-      .replace(/^# (.*$)/gim, `<h1 class="text-3xl font-bold mb-4 pb-2 border-b ${darkMode ? 'text-gray-100 border-gray-600' : 'text-gray-900 border-gray-300'}">$1</h1>`)
-      .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-semibold mb-3 mt-6" style="color: #0078D4;">$1</h2>')
-      .replace(/^### (.*$)/gim, `<h3 class="text-xl font-medium mb-2 mt-4 ${darkMode ? 'text-gray-200' : 'text-gray-800'}">$1</h3>`)
-      // Bold text
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold" style="color: #0078D4;">$1</strong>')
-      // Italic text
-      .replace(/\*(.*?)\*/g, `<em class="italic ${darkMode ? 'text-gray-400' : 'text-gray-600'}">$1</em>`)
-      // Horizontal rules
-      .replace(/^---$/gim, `<hr class="my-6 ${darkMode ? 'border-gray-600' : 'border-gray-300'}" />`)
-      // Blockquotes
-      .replace(/^> (.*$)/gim, `<blockquote class="border-l-4 pl-4 py-2 my-4 italic ${darkMode ? 'bg-blue-900 text-gray-300' : 'bg-blue-50 text-gray-700'}" style="border-left-color: #0078D4;">$1</blockquote>`)
-    
-    // Handle lists
-    const lines = html.split('\n')
-    const processedLines = []
-    let inList = false
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      
-      if (line.match(/^- /)) {
-        if (!inList) {
-          processedLines.push(`<ul class="list-disc list-inside mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}">`)
-          inList = true
-        }
-        processedLines.push(`<li class="mb-1">${line.replace(/^- /, '')}</li>`)
-      } else if (line.match(/^\d+\. /)) {
-        if (!inList) {
-          processedLines.push(`<ol class="list-decimal list-inside mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}">`)
-          inList = true
-        }
-        processedLines.push(`<li class="mb-1">${line.replace(/^\d+\. /, '')}</li>`)
-      } else {
-        if (inList) {
-          processedLines.push('</ul>')
-          inList = false
-        }
-        processedLines.push(line)
-      }
-    }
-    
-    if (inList) {
-      processedLines.push('</ul>')
-    }
-    
-    return processedLines
-      .join('<br/>')
-      // Clean up extra br tags after headers and block elements
-      .replace(/(<\/h[1-6]>)<br\/>/g, '$1')
-      .replace(/(<\/blockquote>)<br\/>/g, '$1')
-      .replace(/(<hr[^>]*>)<br\/>/g, '$1')
-      .replace(/(<\/ul>)<br\/>/g, '$1')
-      .replace(/(<\/ol>)<br\/>/g, '$1')
-      .replace(/(<ul[^>]*>)<br\/>/g, '$1')
-      .replace(/(<ol[^>]*>)<br\/>/g, '$1')
   }
 
   return (
@@ -645,12 +571,12 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
             <img    
               src="/img/logoimg.png" 
               alt="SELLY Logo" 
-              className="w-12 h-12 mr-3"
+              className="w-20 h-20 mr-3"
             />
-            <h1 className={`text-4xl font-light ${darkMode ? 'text-white' : 'text-gray-800'}`}>SELLY</h1>
+            <h1 className={`text-4xl font-light ${darkMode ? 'text-white' : 'text-gray-800'}`}>Selly</h1>
           </div>
-          <h2 className={`text-xl font-light mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>More insights. More sales.</h2>
-          <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Give enterprise sellers every critical insight about a target account in under ten seconds</p>
+          <h2 className={`text-xl font-light mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>More Insights. More Sales.</h2>
+          <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Give enterprise sellers critical insight about leads in seconds</p>
         </div>
 
         {/* Input Form */}
@@ -660,8 +586,8 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
             : 'bg-white border-gray-200'
         }`} style={{ borderRadius: '8px' }}>
           <div className="mb-6">
-            <h3 className={`text-2xl font-light mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Generate Account Brief</h3>
-            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Get snapshot, low-ACR pipeline, upsell synergies, and ready-to-use storyline</p>
+            <h3 className={`text-2xl font-light mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Generate Account Briefing</h3>
+            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Selly instantly transforms market news and CRM insights into actionable sales opportunities and compelling storylines.</p>
           </div>
 
           <div className="space-y-6">
@@ -937,7 +863,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                   }`}
                   style={{ borderRadius: '8px' }}
                 >
-                  New Brief
+                    Reset  
                 </button>
               )}
             </div>
@@ -957,7 +883,7 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                 <img 
                   src="/img/logoimg.png" 
                   alt="SELLY Logo" 
-                  className="w-10 h-10 mr-4"
+                  className="w-12 h-12 mr-4"
                 />
                 <div>
                   <h2 className={`text-3xl font-light ${darkMode ? 'text-white' : 'text-gray-800'}`}>Account Brief Generated</h2>
@@ -1024,10 +950,27 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                 : 'border-gray-200 bg-gray-50'
             }`} style={{ borderRadius: '8px' }}>
               <div className="prose prose-gray max-w-none">
-                <div 
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm]}
                   className={`leading-relaxed ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}
-                  dangerouslySetInnerHTML={{ __html: markdownToHtml(briefData.markdownReport) }}
-                />
+                  components={{
+                    h1: ({node, ...props}) => <h1 className={`text-3xl font-bold mb-4 pb-2 border-b ${darkMode ? 'text-gray-100 border-gray-600' : 'text-gray-900 border-gray-300'}`} {...props} />,
+                    h2: ({node, ...props}) => <h2 className={`text-2xl font-semibold mb-3 mt-6 ${darkMode ? '' : 'text-blue-600'}`} style={darkMode ? {color: '#b3daf0'} : {}} {...props} />,
+                    h3: ({node, ...props}) => <h3 className={`text-xl font-medium mb-2 mt-4 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`} {...props} />,
+                    strong: ({node, ...props}) => <strong className={`font-semibold ${darkMode ? '' : 'text-blue-600'}`} style={darkMode ? {color: '#b3daf0'} : {}} {...props} />,
+                    table: ({node, ...props}) => <table className={`w-full border-collapse border ${darkMode ? 'border-gray-600' : 'border-gray-300'} mb-4 mt-2`} {...props} />,
+                    th: ({node, ...props}) => <th className={`border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-gray-50 text-gray-900'} px-3 py-2 text-left font-semibold`} {...props} />,
+                    td: ({node, ...props}) => <td className={`border ${darkMode ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'} px-3 py-2`} {...props} />,
+                    ul: ({node, ...props}) => <ul className={`list-disc list-inside mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} {...props} />,
+                    ol: ({node, ...props}) => <ol className={`list-decimal list-inside mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} {...props} />,
+                    li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                    hr: ({node, ...props}) => <hr className={`my-6 ${darkMode ? 'border-gray-600' : 'border-gray-300'}`} {...props} />,
+                    blockquote: ({node, ...props}) => <blockquote className={`border-l-4 pl-4 py-2 my-4 italic border-blue-600 ${darkMode ? 'bg-blue-900 text-gray-300' : 'bg-blue-50 text-gray-700'}`} {...props} />,
+                    em: ({node, ...props}) => <em className={`italic ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} {...props} />
+                  }}
+                >
+                  {briefData.markdownReport}
+                </ReactMarkdown>
               </div>
             </div>
           </div>
@@ -1086,30 +1029,14 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                           {crmData.accountInfo.employees}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Headquarters:</span>
-                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                          {crmData.accountInfo.headquarters}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tier:</span>
-                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                          {crmData.accountInfo.tier}
-                        </span>
-                      </div>
+                    
                       <div className="flex justify-between">
                         <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Account Manager:</span>
                         <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                           {crmData.accountInfo.accountManager}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Last Interaction:</span>
-                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                          {crmData.accountInfo.lastInteraction}
-                        </span>
-                      </div>
+                     
                     </div>
                   </div>
 
@@ -1130,13 +1057,6 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
                   </div>
                 </div>
 
-                {/* Installed Base */}
-                <div className={`rounded-lg p-4 mb-6 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                  <h4 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Installed Base</h4>
-                  <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {crmData.accountInfo.installedBase}
-                  </div>
-                </div>
 
                 {/* Active Opportunities */}
                 {crmData.activeOpportunities.length > 0 && (
@@ -1250,8 +1170,8 @@ Position Microsoft as the strategic technology partner for ${accountName}'s digi
             ? 'bg-gray-800/60 border-gray-700' 
             : 'bg-white/60 border-gray-200'
         }`} style={{ borderRadius: '8px' }}>
-          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Powered by SELLY AI</p>
-          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>More insights. More sales.</p>
+          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Powered by Selly AI</p>
+          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>More Insights. More Sales.</p>
         </div>
       </div>
     </div>
