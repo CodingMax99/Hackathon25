@@ -1,4 +1,4 @@
-# SELLY: More insights. More sales.
+# SELLY: More insights. More sales. 
 
 > A multi-agent copilot that delivers complete sales briefings in seconds by fusing internal CRM data with real-time market intelligence.
 
